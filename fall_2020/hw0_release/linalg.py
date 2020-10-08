@@ -16,7 +16,7 @@ def dot_product(a, b):
     """
     out = None
     ### YOUR CODE HERE
-    pass
+    out = np.dot(a, b)
     ### END YOUR CODE
     return out
 
@@ -37,7 +37,8 @@ def complicated_matrix_function(M, a, b):
     """
     out = None
     ### YOUR CODE HERE
-    pass
+    scalar = dot_product(a, b)
+    out = scalar * dot_product(M, a.T)
     ### END YOUR CODE
 
     return out
@@ -58,7 +59,9 @@ def eigen_decomp(M):
     w = None
     v = None
     ### YOUR CODE HERE
-    pass
+    eigen = np.linalg.eig(M)
+    w = eigen[0]
+    v = eigen[1]
     ### END YOUR CODE
     return w, v
 
@@ -88,7 +91,10 @@ def euclidean_distance_native(u, v):
     #     sum.
 
     ### YOUR CODE HERE
-    pass
+    sum = 0
+    for i in range(len(u)):
+        sum += (u[i] - v[i])**2
+    return np.sqrt(sum)
     ### END YOUR CODE
 
 
@@ -120,7 +126,8 @@ def euclidean_distance_numpy(u, v):
     #     sum.
 
     ### YOUR CODE HERE
-    pass
+    diffs = (u - v)**2
+    return np.sqrt(np.sum(diffs))
     ### END YOUR CODE
 
 
@@ -144,6 +151,20 @@ def get_eigen_values_and_vectors(M, k):
     eigenvalues = []
     eigenvectors = []
     ### YOUR CODE HERE
-    pass
+    [values, vectors] = eigen_decomp(M)
+    dict = {}
+    for i in range(len(values)):
+        for j in range(len(values)):
+            if values[i] not in dict:
+                dict[values[i]] = [vectors[j][i]]
+            else:
+                dict[values[i]].append(vectors[j][i])
+    newDict = sorted(dict, reverse = True, key = abs)
+    for elem in newDict:
+        if len(eigenvalues) == k:
+            break
+        eigenvalues.append(elem)
+        eigenvectors.append(dict[elem])
+   
     ### END YOUR CODE
     return eigenvalues, eigenvectors

@@ -20,7 +20,7 @@ def load(image_path):
 
     ### YOUR CODE HERE
     # Use skimage io.imread
-    pass
+    out = io.imread(image_path)
     ### END YOUR CODE
 
     # Let's convert the image to be between the correct range.
@@ -45,7 +45,7 @@ def crop_image(image, start_row, start_col, num_rows, num_cols):
     out = None
 
     ### YOUR CODE HERE
-    pass
+    return image[start_row:start_row + num_rows, start_col:start_col + num_cols]
     ### END YOUR CODE
 
     return out
@@ -68,7 +68,11 @@ def dim_image(image):
     out = None
 
     ### YOUR CODE HERE
-    pass
+    newImage = np.copy(image)
+    for i in range(len(image)):
+        for j in range(len(image[i])):
+            newImage[i][j] = 0.5 * image[i][j]**2
+    return newImage
     ### END YOUR CODE
 
     return out
@@ -96,7 +100,9 @@ def resize_image(input_image, output_rows, output_cols):
     #    > This should require two nested for loops!
 
     ### YOUR CODE HERE
-    pass
+    for i in range(output_rows):
+        for j in range(output_cols):
+            output_image[i, j, :] = input_image[int(i * input_rows / output_rows), int(j * input_cols / output_cols), :]
     ### END YOUR CODE
 
     # 3. Return the output image
@@ -119,7 +125,9 @@ def rotate2d(point, theta):
     # Reminder: np.cos() and np.sin() will be useful here!
 
     ## YOUR CODE HERE
-    pass
+    x = point[0] * np.cos(theta) + point[1] *  -np.sin(theta)
+    y = point[0] * np.sin(theta) + point[1] * np.cos(theta)
+    return np.array([x, y])
     ### END YOUR CODE
 
 
@@ -141,8 +149,14 @@ def rotate_image(input_image, theta):
     output_image = np.zeros_like(input_image)
 
     ## YOUR CODE HERE
-    pass
+    center = input_rows / 2
+    for i in range(input_rows):
+        for j in range(input_cols):
+            [x, y] = rotate2d(np.array([i - center, j - center]), theta)
+            [x, y] = [x + center, y + center]
+            if x >= 0 and x <= input_rows and y >= 0 and y <= input_cols:
+                output_image[i][j] = input_image[int(x), int(y)]
     ### END YOUR CODE
-
+    
     # 3. Return the output image
     return output_image

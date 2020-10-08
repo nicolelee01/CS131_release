@@ -29,7 +29,17 @@ def conv_nested(image, kernel):
     out = np.zeros((Hi, Wi))
 
     ### YOUR CODE HERE
-    pass
+    k = np.flip(kernel, 0)
+    po = np.flip(k, 1)
+    y = np.pad(image, ((int(Hk/2), int(Hk/2)), (int(Wk/2), int(Wk/2))))   
+    #y = np.pad(image, (int(Hk/2), int(Wk/2)))
+    for i in range(Hi):
+        for j in range(Wi):
+            sum = 0
+            for k in range(Hk):
+                for l in range(Wk):
+                   sum += y[i + k][j + l] * po[k][l]
+            out[i][j] = sum
     ### END YOUR CODE
 
     return out
@@ -56,7 +66,7 @@ def zero_pad(image, pad_height, pad_width):
     out = None
 
     ### YOUR CODE HERE
-    pass
+    out = np.pad(image, ((pad_height, pad_height), (pad_width, pad_width)))
     ### END YOUR CODE
     return out
 
@@ -85,7 +95,17 @@ def conv_fast(image, kernel):
     out = np.zeros((Hi, Wi))
 
     ### YOUR CODE HERE
-    pass
+    pad_height = int(Hk/2)
+    pad_width = int(Wk/2)
+    padded = zero_pad(image, pad_height, pad_width)    
+
+    k = np.flip(kernel, 0)
+    po = np.flip(k, 1)
+
+    for i in range(Hi):
+        for j in range(Wi):
+            out[i][j] = np.sum((po * padded[i:i+Hk,j:j+Wk])) 
+
     ### END YOUR CODE
 
     return out
@@ -105,7 +125,9 @@ def cross_correlation(f, g):
 
     out = None
     ### YOUR CODE HERE
-    pass
+    k = np.flip(g, 0)
+    kernel = np.flip(k, 1)
+    out = conv_fast(f, kernel)
     ### END YOUR CODE
 
     return out
@@ -127,7 +149,11 @@ def zero_mean_cross_correlation(f, g):
 
     out = None
     ### YOUR CODE HERE
-    pass
+    mean = np.mean(g)
+    g -= mean
+    k = np.flip(g, 0)
+    kernel = np.flip(k, 1)
+    out = conv_fast(f, kernel)
     ### END YOUR CODE
 
     return out
@@ -151,7 +177,29 @@ def normalized_cross_correlation(f, g):
 
     out = None
     ### YOUR CODE HERE
-    pass
+
+    Hi, Wi = f.shape
+    Hk, Wk = g.shape
+    out = np.zeros((Hi, Wi))
+
+    pad_height = int(Hk/2)
+    pad_width = int(Wk/2)
+    padded = zero_pad(f, pad_height, pad_width)  
+
+    k = np.flip(g, 0)
+    po = np.flip(k, 1)
+
+    gMean = np.mean(g)
+    gStd = np.std(g)
+
+    for i in range(Hi):
+        for j in range(Wi):
+            fMean = np.mean(padded[i:i+Hk,j:j+Wk])
+            fStd = np.std(padded[i:i+Hk,j:j+Wk])
+            newF = (padded[i:i+Hk,j:j+Wk] - fMean) / fStd
+            newG = (g - gMean) / gStd
+            dot = np.sum(np.multiply(newF,newG))
+            out[i][j] = dot
     ### END YOUR CODE
 
     return out

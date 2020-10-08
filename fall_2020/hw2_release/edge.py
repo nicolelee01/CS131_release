@@ -36,7 +36,13 @@ def conv(image, kernel):
     padded = np.pad(image, pad_width, mode='edge')
 
     ### YOUR CODE HERE
-    pass
+    k = np.flip(kernel, 0)
+    po = np.flip(k, 1)
+    #print('kernel',po)
+    for i in range(Hi):
+        for j in range(Wi):
+            #print(np.sum((po * padded[i:i+Hk,j:j+Wk])))
+            out[i][j] = np.sum((po * padded[i:i+Hk,j:j+Wk])) / 2
     ### END YOUR CODE
 
     return out
@@ -59,9 +65,11 @@ def gaussian_kernel(size, sigma):
     """
 
     kernel = np.zeros((size, size))
-
+    k = (size - 1) / 2
     ### YOUR CODE HERE
-    pass
+    for i in range(len(kernel)):
+        for j in range(len(kernel)):
+            kernel[i][j] = 1.0 / (2 * np.pi * sigma**2) * np.exp(-1/(2 * sigma**2) * ((i - k)**2 + (j - k)**2))
     ### END YOUR CODE
 
     return kernel
@@ -81,7 +89,8 @@ def partial_x(img):
     out = None
 
     ### YOUR CODE HERE
-    pass
+    kernel = np.array([[1, 0, -1]])
+    out = conv(img, kernel)
     ### END YOUR CODE
 
     return out
@@ -101,7 +110,8 @@ def partial_y(img):
     out = None
 
     ### YOUR CODE HERE
-    pass
+    kernel = np.array([1, 0, -1]).reshape(3, 1)
+    out = conv(img, kernel)
     ### END YOUR CODE
 
     return out
@@ -125,7 +135,16 @@ def gradient(img):
     theta = np.zeros(img.shape)
 
     ### YOUR CODE HERE
-    pass
+    Gx = partial_x(img)
+    Gy = partial_y(img)
+    G = np.sqrt(Gx**2 + Gy**2)
+    theta = np.arctan2(Gx, Gy)
+    for i in range(len(theta)):
+        for j in range(len(theta[0])):
+            theta[i][j] *= 180 / np.pi
+            if theta[i][j] < 0:
+                theta[i][j] = 360 + theta[i][j]
+    return G, theta
     ### END YOUR CODE
 
     return G, theta
@@ -150,9 +169,41 @@ def non_maximum_suppression(G, theta):
     # Round the gradient direction to the nearest 45 degrees
     theta = np.floor((theta + 22.5) / 45) * 45
 
-    #print(G)
     ### BEGIN YOUR CODE
-    pass
+    for i in range(H):
+        for j in range(W):
+            if theta[i][j] == 0 and i < H - 1:
+                if theta[i][j] < theta[i + 1][j]:
+                    theta[i][j] = 0
+                    continue
+            elif theta[i][j] == 45 and j > 0 and i < H - 1:
+                if theta[i][j] < theta[i + 1][j - 1]:
+                    theta[i][j] = 0
+                    continue
+            elif theta[i][j] == 90 and j > 0:
+                if theta[i][j] < theta[i][j - 1]:
+                    theta[i][j] = 0
+                    continue
+            elif theta[i][j] == 135 and j > 0 and i > 0:
+                if theta[i][j] < theta[i - 1][j - 1]:
+                    theta[i][j] = 0
+                    continue    
+            elif theta[i][j] == 180 and i > 0:
+                if theta[i][j] < theta[i - 1][j]:
+                    theta[i][j] = 0
+                    continue    
+            elif theta[i][j] == 225 and j > 0 and i < H - 1:
+                if theta[i][j] < theta[i + 1][j - 1]:
+                    theta[i][j] = 0
+                    continue    
+            elif theta[i][j] == 270 and i < H - 1:
+                if theta[i][j] < theta[i + 1][j]:
+                    theta[i][j] = 0
+                    continue     
+            elif theta[i][j] == 315 and j < W - 1 and i < H - 1:
+                if theta[i][j] < theta[i + 1][j + 1]:
+                    theta[i][j] = 0
+                    continue       
     ### END YOUR CODE
 
     return out
