@@ -138,13 +138,11 @@ def gradient(img):
     Gx = partial_x(img)
     Gy = partial_y(img)
     G = np.sqrt(Gx**2 + Gy**2)
-    theta = np.arctan2(Gx, Gy)
+    theta = np.arctan2(Gy, Gx)
+    theta *= 180 / np.pi
     for i in range(len(theta)):
         for j in range(len(theta[0])):
-            theta[i][j] *= 180 / np.pi
-            if theta[i][j] < 0:
-                theta[i][j] = 360 + theta[i][j]
-    return G, theta
+            theta[i][j] = theta[i][j] % 360
     ### END YOUR CODE
 
     return G, theta
@@ -172,38 +170,49 @@ def non_maximum_suppression(G, theta):
     ### BEGIN YOUR CODE
     for i in range(H):
         for j in range(W):
-            if theta[i][j] == 0 and i < H - 1:
-                if theta[i][j] < theta[i + 1][j]:
-                    theta[i][j] = 0
-                    continue
-            elif theta[i][j] == 45 and j > 0 and i < H - 1:
-                if theta[i][j] < theta[i + 1][j - 1]:
-                    theta[i][j] = 0
-                    continue
-            elif theta[i][j] == 90 and j > 0:
-                if theta[i][j] < theta[i][j - 1]:
-                    theta[i][j] = 0
-                    continue
-            elif theta[i][j] == 135 and j > 0 and i > 0:
-                if theta[i][j] < theta[i - 1][j - 1]:
-                    theta[i][j] = 0
-                    continue    
-            elif theta[i][j] == 180 and i > 0:
-                if theta[i][j] < theta[i - 1][j]:
-                    theta[i][j] = 0
-                    continue    
-            elif theta[i][j] == 225 and j > 0 and i < H - 1:
-                if theta[i][j] < theta[i + 1][j - 1]:
-                    theta[i][j] = 0
-                    continue    
-            elif theta[i][j] == 270 and i < H - 1:
-                if theta[i][j] < theta[i + 1][j]:
-                    theta[i][j] = 0
-                    continue     
-            elif theta[i][j] == 315 and j < W - 1 and i < H - 1:
-                if theta[i][j] < theta[i + 1][j + 1]:
-                    theta[i][j] = 0
-                    continue       
+            angle = theta[i][j]
+            gradient = G[i][j]
+            if angle == 0 or angle == 180 or angle == 360:
+                if j < W - 1:
+                    if gradient < G[i][j + 1]: 
+                        out[i][j] = 0
+                        continue
+                if j > 0:
+                    if gradient < G[i][j - 1]:
+                        out[i][j] = 0
+                        continue
+                out[i][j] = G[i][j]
+            elif angle == 45 or angle == 225:
+                if i > 0 and j > 0:
+                    if gradient < G[i - 1][j - 1]:
+                        out[i][j] = 0
+                        continue
+                if i < H - 1 and j < W - 1:
+                    if gradient < G[i + 1][j + 1]:
+                        out[i][j] = 0
+                        continue
+                out[i][j] = G[i][j]
+            elif angle == 90 or angle == 270:
+                if i > 0:
+                    if gradient < G[i - 1][j]:
+                        out[i][j] = 0
+                        continue
+                if i < H - 1:
+                    if gradient < G[i + 1][j]:
+                        out[i][j] = 0
+                        continue
+                out[i][j] = G[i][j]
+            elif angle == 135 or angle == 315:
+                if i > 0 and j < H - 1:
+                    if gradient < G[i - 1][j + 1]:
+                        out[i][j] = 0
+                        continue
+                if j > 0 and i < H - 1:
+                    if gradient < G[i + 1][j - 1]:
+                        out[i][j] = 0
+                        continue
+                out[i][j] = G[i][j]
+                
     ### END YOUR CODE
 
     return out
@@ -228,7 +237,16 @@ def double_thresholding(img, high, low):
     weak_edges = np.zeros(img.shape, dtype=np.bool)
 
     ### YOUR CODE HERE
-    pass
+    H, W = img.shape
+
+    for i in range(H):
+        for j in range(W):
+            if img[i][j] > high:
+                strong_edges[i][j] = True
+                weak_edges[i][j] = False
+            elif img[i][j] > low:
+                weak_edges[i][j] = True
+                strong_edges[i][j] = False
     ### END YOUR CODE
 
     return strong_edges, weak_edges
@@ -287,7 +305,45 @@ def link_edges(strong_edges, weak_edges):
     edges = np.copy(strong_edges)
 
     ### YOUR CODE HERE
-    pass
+    for i in range(H):
+        for j in range(W):
+            if strong_edges[i][j] == True:
+                edges[i][j] = True
+                continue
+            if i > 0 and j > 0:
+                if weak_edges[i][j] == True and edges[i - 1][j - 1] == True:
+                    edges[i][j] = True
+                    continue
+            if j < W - 1:
+                if weak_edges[i][j] == True and edges[i][j + 1] == True:
+                    edges[i][j] = True
+                    continue
+            if i > 0 and j < W - 1:
+                if weak_edges[i][j] == True and edges[i - 1][j + 1] == True:
+                    edges[i][j] = True
+                    continue
+            if j < W - 1:
+                if weak_edges[i][j] == True and edges[i][j + 1] == True:
+                    edges[i][j] = True
+                    continue
+            if i < H - 1 and j < W - 1:
+                if weak_edges[i][j] == True and edges[i + 1][j + 1] == True:
+                    edges[i][j] = True
+                    continue
+            if i < H - 1:
+                if weak_edges[i][j] == True and edges[i + 1][j] == True:
+                    edges[i][j] = True
+                    continue
+            if i < H - 1 and j > 0:
+                if weak_edges[i][j] == True and edges[i + 1][j - 1] == True:
+                    edges[i][j] = True
+                    continue
+            if j > 0:
+                if weak_edges[i][j] == True and edges[i][j - 1] == True:
+                    edges[i][j] = True
+                    continue
+            edges[i][j] = False
+            
     ### END YOUR CODE
 
     return edges
@@ -305,7 +361,14 @@ def canny(img, kernel_size=5, sigma=1.4, high=20, low=15):
         edge: numpy array of shape(H, W).
     """
     ### YOUR CODE HERE
-    pass
+    H, W = img.shape
+    edges = np.zeros((H, W), dtype=np.bool)
+    kernel = gaussian_kernel(kernel_size, sigma)
+    img = conv(img, kernel)
+    G, theta = gradient(img)
+    nms = non_maximum_suppression(G, theta)
+    strong_edges, weak_edges = double_thresholding(nms, high, low)
+    edge = link_edges(strong_edges, weak_edges)
     ### END YOUR CODE
 
     return edge
