@@ -38,11 +38,9 @@ def conv(image, kernel):
     ### YOUR CODE HERE
     k = np.flip(kernel, 0)
     po = np.flip(k, 1)
-    #print('kernel',po)
     for i in range(Hi):
         for j in range(Wi):
-            #print(np.sum((po * padded[i:i+Hk,j:j+Wk])))
-            out[i][j] = np.sum((po * padded[i:i+Hk,j:j+Wk])) / 2
+            out[i][j] = np.sum((po * padded[i:i+Hk,j:j+Wk]))
     ### END YOUR CODE
 
     return out
@@ -89,7 +87,7 @@ def partial_x(img):
     out = None
 
     ### YOUR CODE HERE
-    kernel = np.array([[1, 0, -1]])
+    kernel = np.array([[0.5, 0, -0.5]])
     out = conv(img, kernel)
     ### END YOUR CODE
 
@@ -110,7 +108,7 @@ def partial_y(img):
     out = None
 
     ### YOUR CODE HERE
-    kernel = np.array([1, 0, -1]).reshape(3, 1)
+    kernel = np.array([0.5, 0, -0.5]).reshape(3, 1)
     out = conv(img, kernel)
     ### END YOUR CODE
 
@@ -203,7 +201,7 @@ def non_maximum_suppression(G, theta):
                         continue
                 out[i][j] = G[i][j]
             elif angle == 135 or angle == 315:
-                if i > 0 and j < H - 1:
+                if i > 0 and j < W - 1:
                     if gradient < G[i - 1][j + 1]:
                         out[i][j] = 0
                         continue
@@ -212,7 +210,6 @@ def non_maximum_suppression(G, theta):
                         out[i][j] = 0
                         continue
                 out[i][j] = G[i][j]
-                
     ### END YOUR CODE
 
     return out
@@ -238,7 +235,6 @@ def double_thresholding(img, high, low):
 
     ### YOUR CODE HERE
     H, W = img.shape
-
     for i in range(H):
         for j in range(W):
             if img[i][j] > high:
@@ -307,43 +303,19 @@ def link_edges(strong_edges, weak_edges):
     ### YOUR CODE HERE
     for i in range(H):
         for j in range(W):
-            if strong_edges[i][j] == True:
-                edges[i][j] = True
-                continue
-            if i > 0 and j > 0:
-                if weak_edges[i][j] == True and edges[i - 1][j - 1] == True:
-                    edges[i][j] = True
-                    continue
-            if j < W - 1:
-                if weak_edges[i][j] == True and edges[i][j + 1] == True:
-                    edges[i][j] = True
-                    continue
-            if i > 0 and j < W - 1:
-                if weak_edges[i][j] == True and edges[i - 1][j + 1] == True:
-                    edges[i][j] = True
-                    continue
-            if j < W - 1:
-                if weak_edges[i][j] == True and edges[i][j + 1] == True:
-                    edges[i][j] = True
-                    continue
-            if i < H - 1 and j < W - 1:
-                if weak_edges[i][j] == True and edges[i + 1][j + 1] == True:
-                    edges[i][j] = True
-                    continue
-            if i < H - 1:
-                if weak_edges[i][j] == True and edges[i + 1][j] == True:
-                    edges[i][j] = True
-                    continue
-            if i < H - 1 and j > 0:
-                if weak_edges[i][j] == True and edges[i + 1][j - 1] == True:
-                    edges[i][j] = True
-                    continue
-            if j > 0:
-                if weak_edges[i][j] == True and edges[i][j - 1] == True:
-                    edges[i][j] = True
-                    continue
-            edges[i][j] = False
-            
+            queue = []
+            visited = []
+            if strong_edges[i, j]:
+                queue.append((i, j))
+            while queue:
+                x, y = queue.pop(0)
+                visited.append((x, y))
+                edges[x, y] = True
+                for point in get_neighbors(x, y, H, W):
+                    if point not in visited and weak_edges[point] == True:
+                        weak_edges[point] = False
+                        queue.append(point)
+                        edges[point] = True            
     ### END YOUR CODE
 
     return edges
@@ -390,7 +362,7 @@ def hough_transform(img):
         thetas: numpy array of shape (n, ).
     """
     # Set rho and theta ranges
-    W, H = img.shape
+    H, W = img.shape
     diag_len = int(np.ceil(np.sqrt(W * W + H * H)))
     rhos = np.linspace(-diag_len, diag_len, diag_len * 2 + 1)
     thetas = np.deg2rad(np.arange(-90.0, 90.0))
@@ -408,7 +380,13 @@ def hough_transform(img):
     # Find rho corresponding to values in thetas
     # and increment the accumulator in the corresponding coordiate.
     ### YOUR CODE HERE
-    pass
+    for i in range(len(xs)):
+        x = xs[i]
+        y = ys[i]
+        for t in range(num_thetas):
+            rho = np.round(x * cos_t[t] + y * sin_t[t])
+            i = np.where(rhos == rho)[0][0]
+            accumulator[i][t] += 1
     ### END YOUR CODE
 
     return accumulator, rhos, thetas
